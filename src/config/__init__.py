@@ -1,0 +1,7 @@
+"""
+Configuration settings and patterns
+"""
+
+from .config import *
+
+__all__ = ['PDF_CONFIG', 'SECTION_PATTERNS', 'TOC_INDICATORS', 'USB_PD_TERMS', 'TAG_CATEGORIES', 'OUTPUT_CONFIG', 'LOGGING_CONFIG', 'VALIDATION_CONFIG', 'PERFORMANCE_CONFIG', 'ERROR_CONFIG']
