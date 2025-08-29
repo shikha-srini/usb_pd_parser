@@ -1,75 +1,267 @@
 # USB PD Specification Parser 🚀
 
-> **Intelligent PDF parsing system for USB Power Delivery specifications**
+A clean, object-oriented Python application for parsing USB Power Delivery specification PDFs and generating structured outputs.
 
-## 🎯 **Quick Start**
+## 📋 Overview
+
+This project provides a robust solution for extracting and structuring content from USB PD specification documents. It follows Object-Oriented Programming (OOP) principles with clean separation of concerns, making it maintainable and extensible.
+
+## ✨ Features
+
+- **PDF Parsing**: Extract text and structure from PDF documents
+- **Table of Contents Extraction**: Identify and parse document sections
+- **Content Analysis**: Analyze sections for tables, figures, and word counts
+- **Multiple Output Formats**: Generate JSONL files and Excel validation reports
+- **Data Validation**: Comprehensive validation of output integrity
+- **Clean OOP Architecture**: Well-structured, maintainable code
+
+## 🏗️ Architecture
+
+The project follows a clean, modular architecture with clear separation of responsibilities:
+
+```
+usb_pd_parser/
+├── usb_pd_parser.py          # Main application entry point
+├── src/                      # Source code modules
+│   ├── parser.py            # PDF parsing and content extraction
+│   ├── output.py            # Output file generation
+│   └── validator.py         # Data validation and integrity checks
+├── output/                   # Generated output files
+├── tests/                    # Test suite
+├── requirements.txt          # Python dependencies
+└── README.md                # This file
+```
+
+### Core Classes
+
+1. **`USBPDParserApp`** - Main application orchestrator
+2. **`PDFParser`** - Handles PDF loading and content extraction
+3. **`OutputManager`** - Manages generation of all output files
+4. **`ValidationManager`** - Validates output integrity and schema compliance
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Python 3.8 or higher
+- pip package manager
+
+### Installation
+
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd usb_pd_parser
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Generate sample outputs:**
+   ```bash
+   python usb_pd_parser.py --samples
+   ```
+
+### Usage
+
+#### Basic PDF Parsing
+```bash
+python usb_pd_parser.py -i "your_spec.pdf"
+```
+
+#### Custom Output Directory
+```bash
+python usb_pd_parser.py -i "your_spec.pdf" -o "custom_output/"
+```
+
+#### Verbose Logging
+```bash
+python usb_pd_parser.py -i "your_spec.pdf" --verbose
+```
+
+#### Generate Sample Files
+```bash
+python usb_pd_parser.py --samples
+```
+
+## 📁 Output Files
+
+The parser generates the following output files:
+
+### 1. **`usb_pd_toc.jsonl`** - Table of Contents
+Contains structured table of contents entries with:
+- Section IDs and titles
+- Page numbers and hierarchy levels
+- Parent-child relationships
+- Semantic tags
+
+### 2. **`usb_pd_spec.jsonl`** - Document Sections
+Contains detailed section information including:
+- Content boundaries (start/end pages)
+- Table and figure detection
+- Word count estimates
+- Hierarchical structure
+
+### 3. **`usb_pd_metadata.jsonl`** - Document Metadata
+Contains document-level information:
+- Total pages and sections
+- Parsing timestamp
+- File size and statistics
+- Error tracking
+
+### 4. **`validation_report.xlsx`** - Validation Report
+Excel file with multiple sheets:
+- **Summary**: Overall parsing statistics
+- **ToC_vs_Parsed**: Comparison between ToC and parsed content
+- **Detailed_Analysis**: Section-by-section analysis
+- **Statistics**: Hierarchical breakdown and content analysis
+
+## 🔧 Technical Details
+
+### Dependencies
+
+- **`pdfplumber`** - PDF text extraction and analysis
+- **`pandas`** - Data manipulation and Excel generation
+- **`openpyxl`** - Excel file creation
+- **`jsonschema`** - JSON schema validation
+
+### Code Quality
+
+- **PEP 8 Compliance**: Follows Python style guidelines
+- **Type Hints**: Full type annotation support
+- **Error Handling**: Comprehensive exception handling
+- **Logging**: Structured logging throughout
+- **Testing**: Unit test coverage for all modules
+
+### OOP Principles
+
+- **Single Responsibility**: Each class has one clear purpose
+- **Open/Closed**: Easy to extend without modifying existing code
+- **Dependency Inversion**: High-level modules don't depend on low-level modules
+- **Interface Segregation**: Clients only depend on methods they use
+
+## 🧪 Testing
+
+Run the test suite to ensure everything works correctly:
 
 ```bash
-# Run the interactive parser
-python usb_pd_parser.py
-
-# Or use command-line mode
-python usb_pd_parser.py -i "your_spec.pdf" -o "output/"
+python -m unittest tests.test_parser -v
 ```
 
-## 📁 **Project Structure**
+## 📊 Sample Output
 
-```
-usb_parser/
-├── 📁 src/                    # Source code
-│   ├── 📁 core/              # Core parsing logic
-│   ├── 📁 schemas/           # Data validation
-│   └── 📁 config/            # Configuration
-├── 📁 tests/                 # Test suite
-├── 📁 examples/              # Demo scripts
-├── 📁 docs/                  # Documentation
-└── usb_pd_parser.py         # Main entry point
+After running `--samples`, you'll get:
+
+```json
+// usb_pd_toc.jsonl
+{"doc_title": "USB Power Delivery Specification Rev X", "section_id": "2", "title": "Overview", "page": 53, "level": 1, "parent_id": null, "full_path": "2 Overview", "tags": []}
+
+// usb_pd_spec.jsonl  
+{"doc_title": "USB Power Delivery Specification Rev X", "section_id": "2", "title": "Overview", "page": 53, "level": 1, "parent_id": null, "full_path": "2 Overview", "tags": [], "content_start": 53, "content_end": 54, "has_tables": false, "has_figures": false, "word_count": 150}
 ```
 
-## ✨ **Features**
+## 🔍 How It Works
 
-- 🔍 **Interactive PDF Upload** - Easy-to-use interface
-- 📑 **Automatic ToC Extraction** - Smart table of contents detection
-- 🏗️ **Hierarchical Structure** - Parent-child section relationships
-- 📊 **Content Analysis** - Tables, figures, and metadata detection
-- 💾 **Multiple Outputs** - JSONL files and Excel validation reports
-- ✅ **Schema Validation** - Data integrity assurance
+### 1. **PDF Loading**
+- Opens PDF using pdfplumber
+- Validates file integrity
+- Extracts basic document information
 
-## 📚 **Documentation**
+### 2. **Content Extraction**
+- Identifies table of contents pages
+- Parses section patterns using regex
+- Builds hierarchical relationships
+- Extracts metadata and statistics
 
-- **[📖 Full Documentation](docs/README.md)** - Complete usage guide
-- **[🏗️ Project Structure](docs/PROJECT_STRUCTURE.md)** - Code organization
-- **[📋 Project Summary](docs/PROJECT_SUMMARY.md)** - Overview and features
+### 3. **Output Generation**
+- Creates JSONL files for each data type
+- Generates Excel validation report
+- Ensures proper formatting and structure
 
-## 🧪 **Testing & Examples**
+### 4. **Validation**
+- Schema validation for all JSONL files
+- Data integrity checks between ToC and sections
+- Comprehensive error reporting
+
+## 🛠️ Customization
+
+### Adding New Section Patterns
+
+Modify the `section_patterns` in `PDFParser`:
+
+```python
+self.section_patterns = [
+    r'^(\d+(?:\.\d+)*)\s+([^\n]+?)(?:\s+(\d+))?$',  # "2.1.2 Title [page]"
+    r'^(\d+(?:\.\d+)*)\s+([^\n]+?)\s+(\d+)$',       # "2.1.2 Title 53"
+    r'^(?:Chapter\s+)?(\d+)\s+([^\n]+?)(?:\s+(\d+))?$'  # "Chapter 2 Title"
+]
+```
+
+### Custom Output Formats
+
+Extend `OutputManager` to add new output formats:
+
+```python
+def generate_custom_format(self, data, filename):
+    # Your custom format logic here
+    pass
+```
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+1. **PDF Loading Failed**
+   - Ensure PDF is not password-protected
+   - Check file corruption
+   - Verify PDF format compatibility
+
+2. **No Sections Found**
+   - Check if PDF has clear table of contents
+   - Verify section numbering patterns
+   - Review ToC page identification logic
+
+3. **Validation Errors**
+   - Check JSONL file format
+   - Verify required fields are present
+   - Review schema compliance
+
+### Debug Mode
+
+Use verbose logging for detailed information:
 
 ```bash
-# Run tests
-python tests/test_parser.py
-
-# Run demos
-python examples/demo.py
-python examples/demo_interactive.py
-python examples/quick_start.py
+python usb_pd_parser.py -i "spec.pdf" --verbose
 ```
 
-## 🔧 **Installation**
+## 🤝 Contributing
 
-```bash
-pip install -r requirements.txt
-```
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Ensure all tests pass
+6. Submit a pull request
 
-## 📊 **Output Files**
+## 📄 License
 
-- `usb_pd_toc.jsonl` - Table of Contents
-- `usb_pd_spec.jsonl` - Document Sections  
-- `usb_pd_metadata.jsonl` - Document Metadata
-- `validation_report.xlsx` - Validation Report
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🚀 **Ready to Parse?**
+## 🙏 Acknowledgments
 
-Just run `python usb_pd_parser.py` and follow the interactive prompts!
+- Built with modern Python best practices
+- Inspired by the need for structured document parsing
+- Designed for maintainability and extensibility
+
+## 📞 Support
+
+For questions, issues, or contributions:
+- Open an issue on GitHub
+- Check the documentation
+- Review the test suite for examples
 
 ---
 
-**📁 [View Full Documentation](docs/README.md) | 🧪 [Run Tests](tests/) | 💡 [Examples](examples/)**
+**Happy Parsing! 🎉**

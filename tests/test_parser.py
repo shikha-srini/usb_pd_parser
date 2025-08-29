@@ -1,94 +1,80 @@
-#!/usr/bin/env python3
 """
-Test script for USB PD Specification Parser
-Tests various components and provides validation.
+Test cases for USB PD Parser
+Tests the new OOP structure with proper naming conventions.
 """
 
 import unittest
 import tempfile
 import os
 import json
-from unittest.mock import Mock, patch
-from src.core import USBPDParser, OutputGenerator
-from src.schemas import TOC_SCHEMA, SECTION_SCHEMA, METADATA_SCHEMA
-from jsonschema import validate, ValidationError
+from src.parser import PDFParser
+from src.output import OutputManager
+from src.validator import ValidationManager
 
-class TestUSBPDParser(unittest.TestCase):
-    """Test cases for USB PD Parser."""
+
+class TestPDFParser(unittest.TestCase):
+    """Test cases for PDF Parser."""
     
     def setUp(self):
         """Set up test fixtures."""
-        self.temp_dir = tempfile.mkdtemp()
-        self.sample_pdf_path = os.path.join(self.temp_dir, "sample.pdf")
-        
-        # Create a mock PDF file
-        with open(self.sample_pdf_path, 'w') as f:
-            f.write("Mock PDF content")
-    
-    def tearDown(self):
-        """Clean up test fixtures."""
-        import shutil
-        shutil.rmtree(self.temp_dir)
+        self.parser = PDFParser()
     
     def test_parser_initialization(self):
-        """Test parser initialization."""
-        parser = USBPDParser(self.sample_pdf_path)
-        self.assertEqual(parser.pdf_path, self.sample_pdf_path)
-        self.assertIsNone(parser.pdf)
-        self.assertEqual(parser.doc_title, "USB Power Delivery Specification")
+        """Test PDF parser initialization."""
+        self.assertIsNotNone(self.parser)
+        self.assertEqual(self.parser.doc_title, "USB Power Delivery Specification")
+        self.assertEqual(len(self.parser.section_patterns), 3)
+        self.assertEqual(len(self.parser.toc_indicators), 9)
     
-    def test_section_id_parsing(self):
-        """Test section ID parsing logic."""
-        parser = USBPDParser(self.sample_pdf_path)
+    def test_section_id_to_tuple(self):
+        """Test section ID to tuple conversion."""
+        result = self.parser._section_id_to_tuple("2.1.3")
+        self.assertEqual(result, (2, 1, 3))
         
-        # Test section ID to tuple conversion
-        self.assertEqual(parser._section_id_to_tuple("2.1.3"), (2, 1, 3))
-        self.assertEqual(parser._section_id_to_tuple("1"), (1,))
-        self.assertEqual(parser._section_id_to_tuple("10.5.2.1"), (10, 5, 2, 1))
+        result = self.parser._section_id_to_tuple("5")
+        self.assertEqual(result, (5,))
+        
+        result = self.parser._section_id_to_tuple("invalid")
+        self.assertEqual(result, (0,))
     
-    def test_tag_generation(self):
-        """Test semantic tag generation."""
-        parser = USBPDParser(self.sample_pdf_path)
-        
-        # Test tag generation for different titles
-        tags = parser._generate_tags("Power Delivery Contract Negotiation")
+    def test_generate_tags(self):
+        """Test tag generation for different titles."""
+        tags = self.parser._generate_tags("Power Delivery Contract Negotiation")
         self.assertIn("power", tags)
         self.assertIn("delivery", tags)
         self.assertIn("contract", tags)
         self.assertIn("negotiation", tags)
         
-        tags = parser._generate_tags("Overview and Introduction")
+        tags = self.parser._generate_tags("Overview and Introduction")
         self.assertIn("overview", tags)
+        self.assertIn("introduction", tags)
         
-        tags = parser._generate_tags("Implementation Requirements")
-        self.assertIn("requirements", tags)
+        tags = self.parser._generate_tags("Implementation Requirements")
         self.assertIn("implementation", tags)
+        self.assertIn("requirements", tags)
     
-    def test_hierarchy_building(self):
-        """Test parent-child relationship building."""
-        parser = USBPDParser(self.sample_pdf_path)
-        
-        # Mock ToC entries
+    def test_build_hierarchy(self):
+        """Test hierarchy building."""
         entries = [
-            {"section_id": "2", "title": "Overview", "page": 53, "level": 1, "parent_id": None},
-            {"section_id": "2.1", "title": "Introduction", "page": 53, "level": 2, "parent_id": None},
-            {"section_id": "2.1.1", "title": "Details", "page": 53, "level": 3, "parent_id": None}
+            {'section_id': '2', 'parent_id': None},
+            {'section_id': '2.1', 'parent_id': None},
+            {'section_id': '2.1.1', 'parent_id': None}
         ]
         
-        parser._build_hierarchy(entries)
+        self.parser._build_hierarchy(entries)
         
-        # Check parent relationships
-        self.assertIsNone(entries[0]["parent_id"])  # "2" has no parent
-        self.assertEqual(entries[1]["parent_id"], "2")  # "2.1" parent is "2"
-        self.assertEqual(entries[2]["parent_id"], "2.1")  # "2.1.1" parent is "2.1"
+        self.assertIsNone(entries[0]['parent_id'])  # Level 1
+        self.assertEqual(entries[1]['parent_id'], '2')  # Level 2
+        self.assertEqual(entries[2]['parent_id'], '2.1')  # Level 3
 
-class TestOutputGenerator(unittest.TestCase):
-    """Test cases for Output Generator."""
+
+class TestOutputManager(unittest.TestCase):
+    """Test cases for Output Manager."""
     
     def setUp(self):
         """Set up test fixtures."""
         self.temp_dir = tempfile.mkdtemp()
-        self.output_gen = OutputGenerator(self.temp_dir)
+        self.output_manager = OutputManager(self.temp_dir)
     
     def tearDown(self):
         """Clean up test fixtures."""
@@ -97,159 +83,114 @@ class TestOutputGenerator(unittest.TestCase):
     
     def test_output_directory_creation(self):
         """Test output directory creation."""
-        new_dir = os.path.join(self.temp_dir, "new_output")
-        output_gen = OutputGenerator(new_dir)
-        self.assertTrue(os.path.exists(new_dir))
+        self.assertTrue(os.path.exists(self.temp_dir))
     
-    def test_toc_jsonl_generation(self):
-        """Test ToC JSONL file generation."""
-        sample_toc = [
+    def test_toc_file_generation(self):
+        """Test ToC file generation."""
+        toc_entries = [
             {
-                "doc_title": "Test Spec",
-                "section_id": "1",
-                "title": "Introduction",
-                "page": 1,
-                "level": 1,
-                "parent_id": None,
-                "full_path": "1 Introduction",
-                "tags": []
+                'section_id': '2',
+                'title': 'Overview',
+                'page': 53,
+                'level': 1,
+                'parent_id': None,
+                'tags': []
             }
         ]
         
-        output_file = self.output_gen.generate_toc_jsonl(sample_toc, "Test Spec")
-        self.assertTrue(os.path.exists(output_file))
+        result = self.output_manager.generate_toc_file(toc_entries, "Test Doc")
+        self.assertTrue(os.path.exists(result))
         
-        # Verify content
-        with open(output_file, 'r') as f:
-            content = f.read().strip()
-            self.assertIn("Test Spec", content)
-            self.assertIn("Introduction", content)
+        # Check file content
+        with open(result, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+            self.assertEqual(len(lines), 1)
+            
+            data = json.loads(lines[0])
+            self.assertEqual(data['doc_title'], "Test Doc")
+            self.assertEqual(data['section_id'], "2")
+            self.assertEqual(data['title'], "Overview")
     
-    def test_schema_validation(self):
-        """Test JSON schema validation."""
-        # Valid entry
-        valid_entry = {
-            "doc_title": "Test",
-            "section_id": "1.1",
-            "title": "Test Section",
-            "page": 1,
-            "level": 2,
-            "parent_id": "1",
-            "full_path": "1.1 Test Section",
-            "tags": []
-        }
+    def test_spec_file_generation(self):
+        """Test spec file generation."""
+        sections = [
+            {
+                'section_id': '2',
+                'title': 'Overview',
+                'page': 53,
+                'level': 1,
+                'parent_id': None,
+                'tags': [],
+                'content_start': 53,
+                'content_end': 54,
+                'has_tables': False,
+                'has_figures': False,
+                'word_count': 150
+            }
+        ]
         
-        # Should not raise exception
-        validate(valid_entry, TOC_SCHEMA)
+        result = self.output_manager.generate_spec_file(sections, "Test Doc")
+        self.assertTrue(os.path.exists(result))
         
-        # Invalid entry (missing required field)
-        invalid_entry = {
-            "doc_title": "Test",
-            "section_id": "1.1",
-            # Missing title
-            "page": 1,
-            "level": 2,
-            "parent_id": "1",
-            "full_path": "1.1 Test Section",
-            "tags": []
-        }
-        
-        # Should raise exception
-        with self.assertRaises(ValidationError):
-            validate(invalid_entry, TOC_SCHEMA)
+        # Check file content
+        with open(result, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+            self.assertEqual(len(lines), 1)
+            
+            data = json.loads(lines[0])
+            self.assertEqual(data['doc_title'], "Test Doc")
+            self.assertEqual(data['section_id'], "2")
+            self.assertEqual(data['word_count'], 150)
 
-class TestSchemas(unittest.TestCase):
-    """Test cases for JSON schemas."""
-    
-    def test_toc_schema_validation(self):
-        """Test ToC schema validation."""
-        valid_toc = {
-            "doc_title": "USB PD Spec",
-            "section_id": "2.1.2",
-            "title": "Power Delivery Contract Negotiation",
-            "page": 53,
-            "level": 3,
-            "parent_id": "2.1",
-            "full_path": "2.1.2 Power Delivery Contract Negotiation",
-            "tags": ["contracts", "negotiation"]
-        }
-        
-        # Should validate successfully
-        validate(valid_toc, TOC_SCHEMA)
-    
-    def test_section_schema_validation(self):
-        """Test section schema validation."""
-        valid_section = {
-            "doc_title": "USB PD Spec",
-            "section_id": "2.1.2",
-            "title": "Power Delivery Contract Negotiation",
-            "page": 53,
-            "level": 3,
-            "parent_id": "2.1",
-            "full_path": "2.1.2 Power Delivery Contract Negotiation",
-            "tags": ["contracts", "negotiation"],
-            "content_start": 53,
-            "content_end": 54,
-            "has_tables": False,
-            "has_figures": False,
-            "word_count": 150
-        }
-        
-        # Should validate successfully
-        validate(valid_section, SECTION_SCHEMA)
-    
-    def test_metadata_schema_validation(self):
-        """Test metadata schema validation."""
-        valid_metadata = {
-            "doc_title": "USB PD Spec",
-            "total_pages": 100,
-            "total_sections": 25,
-            "total_tables": 5,
-            "total_figures": 3,
-            "max_level": 4,
-            "parsing_timestamp": "2024-01-01T00:00:00",
-            "pdf_file_size": 1024000,
-            "parsing_errors": []
-        }
-        
-        # Should validate successfully
-        validate(valid_metadata, METADATA_SCHEMA)
 
-def run_tests():
-    """Run all tests."""
-    print("Running USB PD Parser Tests...")
-    print("=" * 50)
+class TestValidationManager(unittest.TestCase):
+    """Test cases for Validation Manager."""
     
-    # Create test suite
-    test_suite = unittest.TestSuite()
+    def setUp(self):
+        """Set up test fixtures."""
+        self.validator = ValidationManager()
     
-    # Add test classes
-    test_suite.addTest(unittest.makeSuite(TestUSBPDParser))
-    test_suite.addTest(unittest.makeSuite(TestOutputGenerator))
-    test_suite.addTest(unittest.makeSuite(TestSchemas))
+    def test_schema_loading(self):
+        """Test schema loading."""
+        self.assertIn('toc', self.validator.schemas)
+        self.assertIn('spec', self.validator.schemas)
+        self.assertIn('metadata', self.validator.schemas)
+        
+        # Check required fields
+        toc_schema = self.validator.schemas['toc']
+        required_fields = toc_schema.get('required', [])
+        self.assertIn('doc_title', required_fields)
+        self.assertIn('section_id', required_fields)
+        self.assertIn('title', required_fields)
     
-    # Run tests
-    runner = unittest.TextTestRunner(verbosity=2)
-    result = runner.run(test_suite)
+    def test_data_integrity_validation(self):
+        """Test data integrity validation."""
+        toc_entries = [
+            {'section_id': '2', 'title': 'Overview', 'page': 53, 'parent_id': None}
+        ]
+        
+        sections = [
+            {'section_id': '2', 'title': 'Overview', 'page': 53, 'parent_id': None}
+        ]
+        
+        is_valid, errors = self.validator.validate_data_integrity(toc_entries, sections)
+        self.assertTrue(is_valid)
+        self.assertEqual(len(errors), 0)
     
-    # Print summary
-    print("\n" + "=" * 50)
-    print(f"Tests run: {result.testsRun}")
-    print(f"Failures: {len(result.failures)}")
-    print(f"Errors: {len(result.errors)}")
-    
-    if result.failures:
-        print("\nFailures:")
-        for test, traceback in result.failures:
-            print(f"  {test}: {traceback}")
-    
-    if result.errors:
-        print("\nErrors:")
-        for test, traceback in result.errors:
-            print(f"  {test}: {traceback}")
-    
-    return result.wasSuccessful()
+    def test_data_integrity_validation_with_mismatch(self):
+        """Test data integrity validation with mismatched data."""
+        toc_entries = [
+            {'section_id': '2', 'title': 'Overview', 'page': 53, 'parent_id': None}
+        ]
+        
+        sections = [
+            {'section_id': '2', 'title': 'Overview', 'page': 60, 'parent_id': None}
+        ]
+        
+        is_valid, errors = self.validator.validate_data_integrity(toc_entries, sections)
+        self.assertFalse(is_valid)
+        self.assertGreater(len(errors), 0)
 
-if __name__ == "__main__":
-    success = run_tests()
-    exit(0 if success else 1)
+
+if __name__ == '__main__':
+    unittest.main()

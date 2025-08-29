@@ -1,6 +1,18 @@
-pdfplumber==0.10.3
-PyPDF2==3.0.1
-pandas==2.1.4
-openpyxl==3.1.2
-jsonschema==4.20.0
-python-dateutil==2.8.2
+# Core PDF processing
+pdfplumber>=0.9.0
+
+# Data manipulation and Excel generation
+pandas>=1.5.0
+openpyxl>=3.1.0
+
+# JSON schema validation
+jsonschema>=4.17.0
+
+# Development and testing
+pytest>=7.0.0
+pytest-cov>=4.0.0
+
+# Code quality
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.0.0
